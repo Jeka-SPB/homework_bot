@@ -1,4 +1,4 @@
-# Бот для проверки статуса задний YandexPracticeum
+# Бот для проверки статуса задний YandexPracticum
 
 написан в соответствии с требования ТЗ
 
@@ -9,9 +9,10 @@ pip install -r requirements.txt
 ## Создайте новый файл и добавьте в него токены
 
 Например:
-Telegramm_token=.......
-TELEGRAM_CHAT_ID=.......
-Your_token=......
+
+- Telegramm_token=.......
+- TELEGRAM_CHAT_ID=.......
+- Your_token=......
 
 
 ## Для получения токенов телеграмма используйте ботов
