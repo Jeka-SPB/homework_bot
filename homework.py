@@ -1,8 +1,9 @@
 import logging
 import os
 import time
-
+from http import HTTPStatus
 import requests
+import json
 import telegram
 from dotenv import load_dotenv
 
@@ -45,12 +46,16 @@ def get_api_answer(current_timestamp) -> dict:
     """Вызывается из def main(). Запрос к АПИ."""
     timestamp = current_timestamp or int(time.time())
     params = {'from_date': timestamp}
-    homework = requests.get(ENDPOINT, headers=HEADERS, params=params)
-    if homework.status_code == 200:
-        logging.info('API receive')
-        print(homework.json())
-        return homework.json()
-    if homework.status_code != 200:
+    try:
+        homework = requests.get(ENDPOINT, headers=HEADERS, params=params)
+        if homework.status_code == HTTPStatus.OK:
+            logging.info('Url available')
+            return homework.json()
+    except requests.exceptions.RequestException as error:
+        logging.error(f'URL not available {error}')
+    except json.decoder.JSONDecodeError as error:
+        logging.error(f'Json format not available {error}')
+    if homework.status_code != HTTPStatus.OK:
         logging.error('server is not available')
         raise Exception('server is not available')
 
@@ -58,24 +63,49 @@ def get_api_answer(current_timestamp) -> dict:
 def check_response(response):
     """Вызывается из def main(). Проверяет АПИ на корректность."""
     if not isinstance(response, dict):
-        logging.warning('dict not received')
-        raise TypeError('dict not found')
+        logging.warning('type not dict')
+        raise TypeError('type not dict')
+    if 'homeworks' not in response:
+        logging.warning('key not found')
+        raise KeyError('key not found')
     if not isinstance(response['homeworks'], list):
         logging.warning('list not received')
         raise TypeError('list not found')
-    if isinstance(response, dict):
-        logging.info('keys received')
+    if len(response) >= 0:
+        logging.info('simple accepted')
         return response['homeworks']
 
 
 def parse_status(homework):
     """Вызывается из def main(). Парсит результат АПИ."""
+    if len(homework) <= 0:
+        raise IndexError('list empty')
+    if 'homework_name' not in homework:
+        logging.info('homework_name accepted')
+        raise KeyError('key not found')
+    if 'status' not in homework:
+        logging.info('homework_name accepted')
+        raise KeyError('key not found')
     homework_name = homework['homework_name']
+    logging.info('homework_name accepted')
     homework_status = homework['status']
+    logging.info('homework_status accepted')
+    # try:
+    #     HOMEWORK_STATUSES
+    # except NameError:
+    #     logging.error('HOMEWORK_STATUSES not found')
+    #     raise NameError('HOMEWORK_STATUSES add')
+    # if len(HOMEWORK_STATUSES) <= 0:
+    #     raise Exception('dict HOMEWORK_STATUSES empty')
+    # if not isinstance(HOMEWORK_STATUSES, dict):
+    #     logging.warning('type not dict')
+    #     raise TypeError('type not dict')
     if homework_status in HOMEWORK_STATUSES:
         verdict = HOMEWORK_STATUSES[homework_status]
+        logging.info('verdict accepted')
+    logging.info('messange accepted')
     return f'Изменился статус проверки работы "{homework_name}" - {verdict}'
-
+    
 
 def check_tokens() -> bool:
     """Проверяет обязательное наличие переменных окружения."""
@@ -95,12 +125,13 @@ def main():
     current_timestamp = int(time.time())
     while True:
         try:
-            response = get_api_answer(current_timestamp)
-            check_key_homeworks = check_response(response)
-            parse_homeworks = parse_status(check_key_homeworks)
-            send_message(bot, parse_homeworks)
-            current_timestamp = int(time.time())
-            time.sleep(RETRY_TIME)
+            if check_tokens() is True:
+                response = get_api_answer(current_timestamp)
+                check_key_homeworks = check_response(response)
+                parse_homeworks = parse_status(check_key_homeworks)
+                send_message(bot, parse_homeworks)
+                current_timestamp = int(time.time())
+                time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
             send_message(bot, message)
