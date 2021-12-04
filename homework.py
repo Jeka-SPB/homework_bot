@@ -1,9 +1,10 @@
+import json
 import logging
 import os
 import time
 from http import HTTPStatus
+
 import requests
-import json
 import telegram
 from dotenv import load_dotenv
 
@@ -73,39 +74,37 @@ def check_response(response):
         raise TypeError('list not found')
     if len(response) >= 0:
         logging.info('simple accepted')
-        return response['homeworks']
+    return response['homeworks'][0]
 
 
 def parse_status(homework):
     """Вызывается из def main(). Парсит результат АПИ."""
-    if len(homework) <= 0:
-        raise IndexError('list empty')
     if 'homework_name' not in homework:
-        logging.info('homework_name accepted')
+        logging.error('homework_name accepted')
         raise KeyError('key not found')
     if 'status' not in homework:
-        logging.info('homework_name accepted')
+        logging.error('homework_name accepted')
         raise KeyError('key not found')
     homework_name = homework['homework_name']
     logging.info('homework_name accepted')
     homework_status = homework['status']
     logging.info('homework_status accepted')
-    # try:
-    #     HOMEWORK_STATUSES
-    # except NameError:
-    #     logging.error('HOMEWORK_STATUSES not found')
-    #     raise NameError('HOMEWORK_STATUSES add')
-    # if len(HOMEWORK_STATUSES) <= 0:
-    #     raise Exception('dict HOMEWORK_STATUSES empty')
-    # if not isinstance(HOMEWORK_STATUSES, dict):
-    #     logging.warning('type not dict')
-    #     raise TypeError('type not dict')
+    try:
+        HOMEWORK_STATUSES
+    except NameError:
+        logging.error('HOMEWORK_STATUSES not found')
+        raise NameError('HOMEWORK_STATUSES add')
+    if len(HOMEWORK_STATUSES) <= 0:
+        raise Exception('dict HOMEWORK_STATUSES empty')
+    if not isinstance(HOMEWORK_STATUSES, dict):
+        logging.warning('type not dict')
+        raise TypeError('type not dict')
     if homework_status in HOMEWORK_STATUSES:
         verdict = HOMEWORK_STATUSES[homework_status]
         logging.info('verdict accepted')
     logging.info('messange accepted')
     return f'Изменился статус проверки работы "{homework_name}" - {verdict}'
-    
+
 
 def check_tokens() -> bool:
     """Проверяет обязательное наличие переменных окружения."""
@@ -134,7 +133,7 @@ def main():
                 time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Сбой в работе программы: {error}'
-            send_message(bot, message)
+            logging.error(message)
             time.sleep(RETRY_TIME)
 
 
