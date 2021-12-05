@@ -85,8 +85,9 @@ def check_response(response):
 
 def parse_status(homework):
     """Вызывается из def main(). Парсит результат АПИ."""
-    if len(homework) < 0:
+    if not homework:
         logger.info('homework not checked')
+        return None
     if 'homework_name' not in homework:
         logger.error('homework_name not key')
         raise KeyError('key not found')
@@ -139,16 +140,18 @@ def main():
                 response = get_api_answer(current_timestamp)
                 check_key_homeworks = check_response(response)
                 parse_homeworks = parse_status(check_key_homeworks)
-                send_message(bot, parse_homeworks)
-                current_timestamp = int(time.time())
-                time.sleep(RETRY_TIME)
+                if parse_homeworks is not None:
+                    send_message(bot, parse_homeworks)
+                    current_timestamp = int(time.time())
+                    time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Program crash: {error}'
             logger.error(message)
             time.sleep(RETRY_TIME)
         else:
-            logger.info('homework not checked')
-            time.sleep(RETRY_TIME)
+            if parse_homeworks is None:
+                logger.info('homework not checked')
+                time.sleep(RETRY_TIME)
 
 
 if __name__ == '__main__':
