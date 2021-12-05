@@ -16,7 +16,7 @@ PRACTICUM_TOKEN = os.getenv('YP_TOKEN')
 TELEGRAM_TOKEN = os.getenv('TEL_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('CHAT_ID')
 
-RETRY_TIME = 7200
+RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 
@@ -58,7 +58,7 @@ def get_api_answer(current_timestamp) -> dict:
         if homework.status_code == HTTPStatus.OK:
             logger.info('Url available')
             return homework.json()
-    except requests.exceptions.RequestException as error:
+    except requests.exceptions.ConnectionError as error:
         logger.error(f'URL not available {error}')
     except json.decoder.JSONDecodeError as error:
         logger.error(f'Json format not available {error}')
@@ -85,20 +85,18 @@ def check_response(response):
 
 def parse_status(homework):
     """Вызывается из def main(). Парсит результат АПИ."""
-    if len(homework) == 0:
+    if len(homework) < 0:
         logger.info('homework not checked')
-        raise IndexError('homework not checked')
-    homework = homework[0]
     if 'homework_name' not in homework:
         logger.error('homework_name not key')
         raise KeyError('key not found')
     if 'status' not in homework:
-        logger.error('homework_name accepted')
+        logger.error('status accepted')
         raise KeyError('key not found')
     homework_name = homework['homework_name']
     logger.info('homework_name accepted')
     homework_status = homework['status']
-    logger.info('homework_status accepted')
+    logger.info('status accepted')
     try:
         HOMEWORK_STATUSES
     except NameError:
@@ -109,6 +107,8 @@ def parse_status(homework):
     if not isinstance(HOMEWORK_STATUSES, dict):
         logger.warning('type not dict')
         raise TypeError('type not dict')
+    if homework_status not in HOMEWORK_STATUSES:
+        return 'status not found'
     if homework_status in HOMEWORK_STATUSES:
         verdict = HOMEWORK_STATUSES[homework_status]
         logger.info('verdict accepted')
@@ -143,8 +143,10 @@ def main():
                 time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Program crash: {error}'
-            send_message(bot, message)
             logger.error(message)
+            time.sleep(RETRY_TIME)
+        else:
+            logger.info('homework not checked')
             time.sleep(RETRY_TIME)
 
 
