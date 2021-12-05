@@ -108,7 +108,8 @@ def parse_status(homework):
         logger.warning('type not dict')
         raise TypeError('type not dict')
     if homework_status not in HOMEWORK_STATUSES:
-        return 'status not found'
+        logger.error('status not found')
+        raise KeyError('status not found')
     if homework_status in HOMEWORK_STATUSES:
         verdict = HOMEWORK_STATUSES[homework_status]
         logger.info('verdict accepted')
