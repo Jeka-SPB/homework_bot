@@ -143,6 +143,7 @@ def main():
                 time.sleep(RETRY_TIME)
         except Exception as error:
             message = f'Program crash: {error}'
+            send_message(bot, message)
             logger.error(message)
             time.sleep(RETRY_TIME)
 
